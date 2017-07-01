@@ -11,29 +11,27 @@
   #include "WProgram.h"
 #endif
 
-#include <PID_v1.h>
+#include <FastFloatPID.h>
 
 /*Constructor (...)*********************************************************
  *    The parameters specified here are those for for which we can't set up
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
-PID::PID(double* Input, double* Output, double* Setpoint,
-        double Kp, double Ki, double Kd, int POn, int ControllerDirection)
+FastFloatPID::FastFloatPID(float* Input, float* Output, float* Setpoint,
+        float Kp, float Ki, float Kd, int POn, int ControllerDirection)
 {
     myOutput = Output;
     myInput = Input;
     mySetpoint = Setpoint;
     inAuto = false;
 
-    PID::SetOutputLimits(0, 255);				//default output limit corresponds to
+    FastFloatPID::SetOutputLimits(0, 255);				//default output limit corresponds to
 												//the arduino pwm limits
 
-    SampleTime = 100;							//default Controller Sample Time is 0.1 seconds
+    SampleTimeInSec = 0.1;							//default Controller Sample Time is 0.1 seconds
 
-    PID::SetControllerDirection(ControllerDirection);
-    PID::SetTunings(Kp, Ki, Kd, POn);
-
-    lastTime = millis()-SampleTime;
+    FastFloatPID::SetControllerDirection(ControllerDirection);
+    FastFloatPID::SetTunings(Kp, Ki, Kd, POn);
 }
 
 /*Constructor (...)*********************************************************
@@ -41,9 +39,9 @@ PID::PID(double* Input, double* Output, double* Setpoint,
  *    to use Proportional on Error without explicitly saying so
  ***************************************************************************/
 
-PID::PID(double* Input, double* Output, double* Setpoint,
-        double Kp, double Ki, double Kd, int ControllerDirection)
-    :PID::PID(Input, Output, Setpoint, Kp, Ki, Kd, P_ON_E, ControllerDirection)
+FastFloatPID::FastFloatPID(float* Input, float* Output, float* Setpoint,
+        float Kp, float Ki, float Kd, int ControllerDirection)
+    :FastFloatPID::FastFloatPID(Input, Output, Setpoint, Kp, Ki, Kd, P_ON_E, ControllerDirection)
 {
 
 }
@@ -55,43 +53,37 @@ PID::PID(double* Input, double* Output, double* Setpoint,
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
-bool PID::Compute()
+bool FastFloatPID::Compute()
 {
-   if(!inAuto) return false;
-   unsigned long now = millis();
-   unsigned long timeChange = (now - lastTime);
-   if(timeChange>=SampleTime)
-   {
-      /*Compute all the working error variables*/
-      double input = *myInput;
-      double error = *mySetpoint - input;
-      double dInput = (input - lastInput);
-      outputSum+= (ki * error);
+	if(!inAuto) return false;
 
-      /*Add Proportional on Measurement, if P_ON_M is specified*/
-      if(!pOnE) outputSum-= kp * dInput;
+	/*Compute all the working error variables*/
+	float input = *myInput;
+	float error = *mySetpoint - input;
+	float dInput = (input - lastInput);
+	outputSum+= (ki * error);
 
-      if(outputSum > outMax) outputSum= outMax;
-      else if(outputSum < outMin) outputSum= outMin;
+	/*Add Proportional on Measurement, if P_ON_M is specified*/
+	if(!pOnE) outputSum-= kp * dInput;
 
-      /*Add Proportional on Error, if P_ON_E is specified*/
-	   double output;
-      if(pOnE) output = kp * error;
-      else output = 0;
+	if(outputSum > outMax) outputSum= outMax;
+	else if(outputSum < outMin) outputSum= outMin;
 
-      /*Compute Rest of PID Output*/
-      output += outputSum - kd * dInput;
+	/*Add Proportional on Error, if P_ON_E is specified*/
+	float output;
+	if(pOnE) output = kp * error;
+	else output = 0;
 
-	    if(output > outMax) output = outMax;
-      else if(output < outMin) output = outMin;
-	    *myOutput = output;
+	/*Compute Rest of PID Output*/
+	output += outputSum - kd * dInput;
 
-      /*Remember some variables for next time*/
-      lastInput = input;
-      lastTime = now;
-	    return true;
-   }
-   else return false;
+	if(output > outMax) output = outMax;
+	else if(output < outMin) output = outMin;
+	*myOutput = output;
+
+	/*Remember some variables for next time*/
+	lastInput = input;
+	return true;
 }
 
 /* SetTunings(...)*************************************************************
@@ -99,7 +91,7 @@ bool PID::Compute()
  * it's called automatically from the constructor, but tunings can also
  * be adjusted on the fly during normal operation
  ******************************************************************************/
-void PID::SetTunings(double Kp, double Ki, double Kd, int POn)
+void FastFloatPID::SetTunings(float Kp, float Ki, float Kd, int POn)
 {
    if (Kp<0 || Ki<0 || Kd<0) return;
 
@@ -108,7 +100,6 @@ void PID::SetTunings(double Kp, double Ki, double Kd, int POn)
 
    dispKp = Kp; dispKi = Ki; dispKd = Kd;
 
-   double SampleTimeInSec = ((double)SampleTime)/1000;
    kp = Kp;
    ki = Ki * SampleTimeInSec;
    kd = Kd / SampleTimeInSec;
@@ -124,22 +115,22 @@ void PID::SetTunings(double Kp, double Ki, double Kd, int POn)
 /* SetTunings(...)*************************************************************
  * Set Tunings using the last-rembered POn setting
  ******************************************************************************/
-void PID::SetTunings(double Kp, double Ki, double Kd){
+void FastFloatPID::SetTunings(float Kp, float Ki, float Kd){
     SetTunings(Kp, Ki, Kd, pOn); 
 }
 
 /* SetSampleTime(...) *********************************************************
- * sets the period, in Milliseconds, at which the calculation is performed
+ * sets the period, in seconds, at which the calculation is performed
  ******************************************************************************/
-void PID::SetSampleTime(int NewSampleTime)
+void FastFloatPID::SetSampleTime(float NewSampleTimeInSec)
 {
-   if (NewSampleTime > 0)
+   if (NewSampleTimeInSec > 0)
    {
-      double ratio  = (double)NewSampleTime
-                      / (double)SampleTime;
+      float ratio  = (float)NewSampleTimeInSec
+                      / (float)SampleTimeInSec;
       ki *= ratio;
       kd /= ratio;
-      SampleTime = (unsigned long)NewSampleTime;
+      SampleTimeInSec = (unsigned long)NewSampleTimeInSec;
    }
 }
 
@@ -151,7 +142,7 @@ void PID::SetSampleTime(int NewSampleTime)
  *  want to clamp it from 0-125.  who knows.  at any rate, that can all be done
  *  here.
  **************************************************************************/
-void PID::SetOutputLimits(double Min, double Max)
+void FastFloatPID::SetOutputLimits(float Min, float Max)
 {
    if(Min >= Max) return;
    outMin = Min;
@@ -172,12 +163,12 @@ void PID::SetOutputLimits(double Min, double Max)
  * when the transition from manual to auto occurs, the controller is
  * automatically initialized
  ******************************************************************************/
-void PID::SetMode(int Mode)
+void FastFloatPID::SetMode(int Mode)
 {
     bool newAuto = (Mode == AUTOMATIC);
     if(newAuto && !inAuto)
     {  /*we just went from manual to auto*/
-        PID::Initialize();
+        FastFloatPID::Initialize();
     }
     inAuto = newAuto;
 }
@@ -186,7 +177,7 @@ void PID::SetMode(int Mode)
  *	does all the things that need to happen to ensure a bumpless transfer
  *  from manual to automatic mode.
  ******************************************************************************/
-void PID::Initialize()
+void FastFloatPID::Initialize()
 {
    outputSum = *myOutput;
    lastInput = *myInput;
@@ -200,7 +191,7 @@ void PID::Initialize()
  * know which one, because otherwise we may increase the output when we should
  * be decreasing.  This is called from the constructor.
  ******************************************************************************/
-void PID::SetControllerDirection(int Direction)
+void FastFloatPID::SetControllerDirection(int Direction)
 {
    if(inAuto && Direction !=controllerDirection)
    {
@@ -216,9 +207,9 @@ void PID::SetControllerDirection(int Direction)
  * functions query the internal state of the PID.  they're here for display
  * purposes.  this are the functions the PID Front-end uses for example
  ******************************************************************************/
-double PID::GetKp(){ return  dispKp; }
-double PID::GetKi(){ return  dispKi;}
-double PID::GetKd(){ return  dispKd;}
-int PID::GetMode(){ return  inAuto ? AUTOMATIC : MANUAL;}
-int PID::GetDirection(){ return controllerDirection;}
+float FastFloatPID::GetKp(){ return  dispKp; }
+float FastFloatPID::GetKi(){ return  dispKi;}
+float FastFloatPID::GetKd(){ return  dispKd;}
+int FastFloatPID::GetMode(){ return  inAuto ? AUTOMATIC : MANUAL;}
+int FastFloatPID::GetDirection(){ return controllerDirection;}
 

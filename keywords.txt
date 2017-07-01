@@ -6,7 +6,7 @@
 # Datatypes (KEYWORD1)
 #######################################
 
-PID	KEYWORD1
+FastFloatPID	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)

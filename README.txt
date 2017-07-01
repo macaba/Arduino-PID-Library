@@ -11,7 +11,7 @@ Teensy settings:
 - 180MHz CPU speed
 - No USB
 CPU load:
-- ADC0 & ADC1 continuous syncronous acquisition with interrupt with 2 PIDs computed: 12%
+- ADC0 & ADC1 continuous synchronous acquisition with ADC interrupt computing 2 PIDs (1 per ADC): 12%
 
 ***************************************************************
 * Arduino PID Library - Version 1.2.1

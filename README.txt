@@ -1,7 +1,7 @@
 Arduino PID library modified for Teensy 3.6 hardware float support and real time loop rates.
 Warning: the Compute() method no longer checks the elapsed time, so it's absolutely crucial to call this at a consistent fixed rate, and to tell the library what this rate is with SetSampleTime() in order for Ki and Kd to be correct.
 Testing has shown this to work well at 150kHz compute rate with low CPU usage (on Teensy 3.6 only. It does not perform well on Teensy 3.2)
-Higher rates are possible however 150kHz is a good practical rate - it corresponds to the the Teensy ADC running at high speed with averaging set to 4 & 12 bit.
+Higher rates are possible however 150kHz is a good practical rate - it corresponds to the the Teensy ADC running at high speed with averaging set to 4 and 12 bit resolution.
 
 ***************************************************************
 * Arduino PID Library - Version 1.2.1

@@ -122,15 +122,15 @@ void FastFloatPID::SetTunings(float Kp, float Ki, float Kd){
 /* SetSampleTime(...) *********************************************************
  * sets the period, in seconds, at which the calculation is performed
  ******************************************************************************/
-void FastFloatPID::SetSampleTime(float NewSampleTimeInSec)
+void FastFloatPID::SetSampleTime(float newSampleTimeInSec)
 {
-   if (NewSampleTimeInSec > 0)
+   if (newSampleTimeInSec > 0)
    {
-      float ratio  = (float)NewSampleTimeInSec
+      float ratio  = (float)newSampleTimeInSec
                       / (float)SampleTimeInSec;
       ki *= ratio;
       kd /= ratio;
-      SampleTimeInSec = (unsigned long)NewSampleTimeInSec;
+      SampleTimeInSec = newSampleTimeInSec;
    }
 }
 
